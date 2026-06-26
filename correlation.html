@@ -11,8 +11,8 @@
   --border: #e0dbd2;
   --text: #1a1814;
   --muted: #6b6560;
-  --accent: #4a7c4e;
-  --accent-light: #eaf2ea;
+  --accent: #3b82f6;
+  --accent-light: #eaf4ff;
   --unselected-bg: #f0ede8;
   --unselected-border: #d4cfc8;
 }
@@ -24,21 +24,21 @@ h1 span { color: var(--accent); }
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px; margin-bottom: 20px; }
 .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 16px; font-weight: 500; }
 .drop { border: 2px dashed var(--border); border-radius: 4px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
-.drop:hover, .drop.drag { border-color: var(--accent); background: #f0f5f0; }
+.drop:hover, .drop.drag { border-color: var(--accent); background: #eaf4ff; }
 .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 .drop-icon { font-size: 24px; margin-bottom: 8px; }
 .drop strong { font-size: 13px; display: block; margin-bottom: 4px; }
 .drop p { font-size: 11px; color: var(--muted); }
 .info { font-size: 11px; padding: 8px 12px; border-radius: 3px; margin-top: 10px; display: none; }
 .info.show { display: block; }
-.info.ok { background: #eaf2ea; color: #2d6a30; }
+.info.ok { background: #eaf4ff; color: #1d63b8; }
 .info.err { background: #fdeaea; color: #a93226; }
 .btn-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
 .btn { font-family: 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; padding: 9px 20px; border-radius: 3px; border: none; cursor: pointer; transition: all 0.15s; }
 .btn-primary { background: var(--text); color: white; }
 .btn-primary:hover { background: #333; }
 .btn-download { background: var(--accent); color: white; }
-.btn-download:hover { background: #3a6340; }
+.btn-download:hover { background: #2563eb; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .scheme-btn { font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size:10px; padding:5px 12px; border-radius:3px; border:1px solid var(--border); cursor:pointer; background:white; transition:all 0.15s; }
 .scheme-btn.active { border-color:var(--accent); background:var(--accent); color:white; }
@@ -65,7 +65,7 @@ h1 span { color: var(--accent); }
 .hdr-card.selected {
   background: var(--accent-light);
   border-color: var(--accent);
-  color: #2d6a30;
+  color: #1d63b8;
   font-weight: 500;
 }
 .select-hint { font-size: 10px; color: var(--muted); margin-top: 8px; }
@@ -306,7 +306,7 @@ const SCHEMES = {
   'Seismic':  { neg:[0,0,255],      mid:[255,255,255], pos:[255,0,0],     label:'Seismic' },
   'Coolwarm': { neg:[59,76,192],    mid:[221,221,221], pos:[180,4,38],    label:'Coolwarm' },
   'PuOr':     { neg:[84,39,136],    mid:[247,247,247], pos:[179,88,6],    label:'PuOr' },
-  'BrBG':     { neg:[1,102,94],     mid:[245,245,245], pos:[140,81,10],   label:'BrBG' },
+  'BlOr':     { neg:[3,110,184],    mid:[245,245,245], pos:[217,119,6],   label:'Blue-Orange' },
   'BlRd':     { neg:[3,110,184],    mid:[255,255,255], pos:[192,57,43],   label:'Blue–Red' },
   'BlCr':     { neg:[3,110,184],    mid:[255,252,242], pos:[139,28,28],   label:'Blue–Crimson' },
 };

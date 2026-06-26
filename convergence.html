@@ -7,8 +7,8 @@
 <style>
 :root{
   --bg:#ffffff;--surface:#f7f8f5;--s2:#eef0ea;
-  --border:#e0e3d8;--acc:#4a7c4e;--ok:#4a7c4e;
-  --acc-light:#e8f0e9;--acc2:#3a7ca5;--acc2-light:#e3eef5;
+  --border:#d7e7f7;--acc:#3b82f6;--ok:#3b82f6;
+  --acc-light:#eaf4ff;--acc2:#0ea5e9;--acc2-light:#e3eef5;
   --err:#c0392b;--amb:#b07c1a;
   --text:#1a1e18;--m:#7a8578;
   --mono:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif;--sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif;
@@ -21,7 +21,7 @@ h1 span{color:var(--acc);}
 
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
 .step{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;transition:border-color .2s;}
-.step.done{border-color:#a8c5aa;background:#f4f9f4;}
+.step.done{border-color:#bddbff;background:#eaf4ff;}
 .snum{font-family:var(--mono);font-size:11px;color:var(--m);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase;}
 .step.done .snum{color:var(--ok);}
 .stitle{font-family:var(--sans);font-size:15px;font-weight:700;margin-bottom:14px;}
@@ -53,7 +53,7 @@ input[type=range]{flex:1;accent-color:var(--acc);cursor:pointer;}
 
 .info{border-radius:8px;padding:9px 13px;font-size:12px;font-family:var(--mono);margin-top:8px;display:none;white-space:pre-wrap;line-height:1.5;}
 .info.show{display:block;}
-.info.ok{background:var(--acc-light);border:1px solid #a8c5aa;color:#2d5e31;}
+.info.ok{background:var(--acc-light);border:1px solid #bddbff;color:#1d63b8;}
 .info.err{background:#fdf0ef;border:1px solid #e8a09a;color:var(--err);}
 .info.warn{background:#fdf6e8;border:1px solid #d4b06a;color:var(--amb);}
 
@@ -105,13 +105,13 @@ input[type=range]{flex:1;accent-color:var(--acc);cursor:pointer;}
 .ttitle{font-size:11px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;}
 table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
 th{text-align:left;color:var(--m);font-weight:400;padding:6px 10px;border-bottom:1px solid var(--border);}
-td{padding:7px 10px;border-bottom:1px solid rgba(224,227,216,.8);color:var(--text);}
+td{padding:7px 10px;border-bottom:1px solid rgba(215,231,247,.8);color:var(--text);}
 tr:last-child td{border-bottom:none;}
 tr.stable td{color:var(--acc);}
 .badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);}
-.badge.ok{background:var(--acc-light);color:#2d5e31;}
+.badge.ok{background:var(--acc-light);color:#1d63b8;}
 .badge.run{background:var(--acc2-light);color:var(--acc2);}
-.badge.start{background:var(--acc-light);color:#2d5e31;font-weight:500;}
+.badge.start{background:var(--acc-light);color:#1d63b8;font-weight:500;}
 
 
 </style>
@@ -230,8 +230,8 @@ tr.stable td{color:var(--acc);}
     <div class="cc full hv-large">
       <div class="ctitle">Hypervolume 추이 — 필터 전 vs 후</div>
       <div class="leg">
-        <div class="lpill"><div class="ldot" style="background:#6c63ff"></div>필터 전 (전체 해)</div>
-        <div class="lpill"><div class="ldot" style="background:#00d4aa"></div>필터 후 (면적차 ≤ 임계값)</div>
+        <div class="lpill"><div class="ldot" style="background:#3b82f6"></div>필터 전 (전체 해)</div>
+        <div class="lpill"><div class="ldot" style="background:#0ea5e9"></div>필터 후 (면적차 ≤ 임계값)</div>
       </div>
       <canvas id="c-ov" height="200"></canvas>
     </div>
@@ -288,8 +288,8 @@ tr.stable td{color:var(--acc);}
     <div class="cc">
       <div class="ctitle">Obj1 UDI역수 평균</div>
       <div class="leg">
-        <div class="lpill"><div class="ldot" style="background:#6c63ff"></div>필터 전</div>
-        <div class="lpill"><div class="ldot" style="background:#6c63ff;opacity:.45"></div>필터 후 (점선)</div>
+        <div class="lpill"><div class="ldot" style="background:#3b82f6"></div>필터 전</div>
+        <div class="lpill"><div class="ldot" style="background:#3b82f6;opacity:.45"></div>필터 후 (점선)</div>
       </div>
       <canvas id="c-o1" height="180"></canvas>
     </div>
@@ -344,8 +344,8 @@ Chart.defaults.color='#7a8578';
 Chart.defaults.font.family="'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif";
 Chart.defaults.font.size=11;
 
-const GRID='rgba(224,227,216,0.8)';
-const CA='#4a7c4e',COK='#3a7ca5',CERR='#c0392b',CAMB='#b07c1a';
+const GRID='rgba(215,231,247,0.8)';
+const CA='#3b82f6',COK='#0ea5e9',CERR='#c0392b',CAMB='#b07c1a';
 
 let rawVals=[],charts={};
 
@@ -603,13 +603,13 @@ function lineDs(data,color,dash=[]){
     fill:false,tension:.35,pointRadius:2,pointBackgroundColor:color,borderWidth:2,borderDash:dash};
 }
 function areaDs(data,color,label=''){
-  const rgb=color==='#6c63ff'?'108,99,255':color==='#00d4aa'?'0,212,170':'108,99,255';
+  const rgb=color==='#3b82f6'?'59,130,246':color==='#0ea5e9'?'14,165,233':'59,130,246';
   return{label,data,borderColor:color,backgroundColor:`rgba(${rgb},.07)`,
     fill:true,tension:.35,pointRadius:2.5,pointBackgroundColor:color,borderWidth:2};
 }
 function barDs(data,thP){
   return{data:data.map(d=>d===null?null:+d.toFixed(2)),
-    backgroundColor:data.map(d=>d===null?'transparent':Math.abs(d)<thP?'rgba(0,212,170,.4)':'rgba(108,99,255,.4)'),
+    backgroundColor:data.map(d=>d===null?'transparent':Math.abs(d)<thP?'rgba(14,165,233,.4)':'rgba(59,130,246,.4)'),
     borderColor:data.map(d=>d===null?'transparent':Math.abs(d)<thP?COK:CA),borderWidth:1};
 }
 function mkChart(id,type,data,options){
@@ -651,13 +651,13 @@ function renderCharts(hvB,hvA,dB,dA,cntA,cntV,o1A,o1V,o2A,o2V,o3A,o3V,o4A,cg,thP
   // Before panel
   mkChart('c-bhv','line',{labels:lb,datasets:[areaDs(hvB,CA)]},base({},'HV',hvMin,hvMax));
   mkChart('c-bd','bar',{labels:lb,datasets:[barDs(dB,thP)]},base(threshAnn(thP,null),'Δ HV (%)'));
-  mkChart('c-bn','bar',{labels:lb,datasets:[{data:cntA,backgroundColor:'rgba(108,99,255,.35)',borderColor:CA,borderWidth:1}]},
+  mkChart('c-bn','bar',{labels:lb,datasets:[{data:cntA,backgroundColor:'rgba(59,130,246,.35)',borderColor:CA,borderWidth:1}]},
     {...base({},'해 수'),scales:{...scaleOpts('해 수'),y:{...scaleOpts().y,beginAtZero:true}}});
 
   // After panel
   mkChart('c-ahv','line',{labels:lb,datasets:[areaDs(hvA,COK)]},base(convAnn(cg),'HV',hvMin,hvMax));
   mkChart('c-ad','bar',{labels:lb,datasets:[barDs(dA,thP)]},base(threshAnn(thP,cg),'Δ HV (%)'));
-  mkChart('c-an','bar',{labels:lb,datasets:[{data:cntV,backgroundColor:'rgba(0,212,170,.35)',borderColor:COK,borderWidth:1}]},
+  mkChart('c-an','bar',{labels:lb,datasets:[{data:cntV,backgroundColor:'rgba(14,165,233,.35)',borderColor:COK,borderWidth:1}]},
     {...base(convAnn(cg),'해 수'),scales:{...scaleOpts('해 수'),y:{...scaleOpts().y,beginAtZero:true}}});
 
   // Obj panels (solid=all, dashed=valid)

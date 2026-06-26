@@ -9,7 +9,7 @@
 <style>
 :root {
   --bg:#f5f2ed; --surface:#ffffff; --border:#e0dbd2; --text:#1a1814; --muted:#6b6560;
-  --accent:#4a7c4e; --accent-light:#eaf2ea;
+  --accent:#3b82f6; --accent-light:#eaf4ff;
   --amber:#8a6a00; --amber-light:#fdf6e3;
   --unsel-bg:#f0ede8; --unsel-border:#d4cfc8;
 }
@@ -21,13 +21,13 @@ h1 span { color:var(--accent); }
 .panel { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:24px; margin-bottom:20px; }
 .panel-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:16px; font-weight:500; }
 .drop { border:2px dashed var(--border); border-radius:4px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; }
-.drop:hover,.drop.drag { border-color:var(--accent); background:#f0f5f0; }
+.drop:hover,.drop.drag { border-color:var(--accent); background:#eaf4ff; }
 .drop input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
 .drop strong { font-size:13px; display:block; margin-bottom:4px; }
 .drop p { font-size:11px; color:var(--muted); }
 .info { font-size:11px; padding:8px 12px; border-radius:3px; margin-top:10px; display:none; }
 .info.show { display:block; }
-.info.ok { background:#eaf2ea; color:#2d6a30; }
+.info.ok { background:#eaf4ff; color:#1d63b8; }
 .info.err { background:#fdeaea; color:#a93226; }
 
 /* 컬럼 선택 카드 */
@@ -43,7 +43,7 @@ h1 span { color:var(--accent); }
 }
 .col-card .idx { font-size:9px; opacity:0.6; margin-right:3px; }
 .col-card:hover { border-color:var(--accent); }
-.col-card.axis { background:var(--accent-light); border-color:var(--accent); color:#2d6a30; font-weight:500; }
+.col-card.axis { background:var(--accent-light); border-color:var(--accent); color:#1d63b8; font-weight:500; }
 .col-card.color-col { background:var(--amber-light); border-color:var(--amber); color:var(--amber); font-weight:500; }
 .hint { font-size:10px; color:var(--muted); margin-top:6px; }
 
@@ -54,7 +54,7 @@ h1 span { color:var(--accent); }
 .btn-primary:hover { background:#333; }
 .btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
 .btn-dl { background:var(--accent); color:white; }
-.btn-dl:hover { background:#3a6340; }
+.btn-dl:hover { background:#2563eb; }
 
 /* 선택 상태 */
 .sel-summary { font-size:11px; color:var(--muted); }
@@ -258,11 +258,11 @@ function getColorValues() {
   return isCat ? { type:'cat', vals:nums.map(v=>String(v)) } : { type:'cont', vals:nums };
 }
 
-const CAT_COLORS = ['#4a7c4e','#c46b2d','#3b5fa0','#8a2d8a','#8a2d2d','#2d7a8a','#6b8a2d','#8a6a00','#2d4a8a','#8a4a2d','#4a2d8a','#2d8a6a'];
+const CAT_COLORS = ['#3b82f6','#c46b2d','#3b5fa0','#8a2d8a','#8a2d2d','#0ea5e9','#64748b','#8a6a00','#2d4a8a','#8a4a2d','#4a2d8a','#2563eb'];
 
 function makeMarker(data, filteredIdx) {
   const colInfo = getColorValues();
-  if (!colInfo) return { size:6, color:'#4a7c4e', opacity:0.8 };
+  if (!colInfo) return { size:6, color:'#3b82f6', opacity:0.8 };
 
   if (colInfo.type === 'cat') {
     const subVals = filteredIdx.map(i => colInfo.vals[i]);
@@ -486,7 +486,7 @@ if py_colors is not None:
     raw = list(py_colors)
     if py_cat_mode:
         cats = sorted(set(str(v) for v in raw))
-        cmap_list = ['#4a7c4e','#c46b2d','#3b5fa0','#8a2d8a','#8a2d2d','#2d7a8a','#6b8a2d','#8a6a00']
+        cmap_list = ['#3b82f6','#c46b2d','#3b5fa0','#8a2d8a','#8a2d2d','#0ea5e9','#64748b','#8a6a00']
         for i, cat in enumerate(cats):
             idx_c = [j for j, v in enumerate(raw) if str(v) == cat]
             ax.scatter([xs[j] for j in idx_c], [ys[j] for j in idx_c], [zs[j] for j in idx_c],
@@ -497,7 +497,7 @@ if py_colors is not None:
         sc = ax.scatter(xs, ys, zs, c=nums, cmap='RdBu_r', s=30, alpha=0.85)
         fig.colorbar(sc, ax=ax, label=str(py_color_label), shrink=0.6, pad=0.1)
 else:
-    ax.scatter(xs, ys, zs, c='#4a7c4e', s=30, alpha=0.85)
+    ax.scatter(xs, ys, zs, c='#3b82f6', s=30, alpha=0.85)
 
 ax.set_xlabel(str(xl), fontsize=9, labelpad=8)
 ax.set_ylabel(str(yl), fontsize=9, labelpad=8)
