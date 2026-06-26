@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>데이터 분포도 | Optimization Analysis Suite</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+:root {
+  --bg:#f5f2ed; --surface:#ffffff; --border:#e0dbd2; --text:#1a1814; --muted:#6b6560;
+  --accent:#4a7c4e; --accent-light:#eaf2ea;
+  --amber:#8a6a00; --amber-light:#fdf6e3;
+  --unsel-bg:#f0ede8; --unsel-border:#d4cfc8;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--text); padding:40px 36px; min-height:100vh; }
+h1 { font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size:26px; font-weight:800; letter-spacing:-0.02em; margin-bottom:4px; }
+h1 span { color:var(--accent); }
+.sub { font-size:11px; color:var(--muted); letter-spacing:0.06em; margin-bottom:32px; }
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:24px; margin-bottom:20px; }
+.panel-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:16px; font-weight:500; }
+.drop { border:2px dashed var(--border); border-radius:4px; padding:32px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; }
+.drop:hover,.drop.drag { border-color:var(--accent); background:#f0f5f0; }
+.drop input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }
+.drop strong { font-size:13px; display:block; margin-bottom:4px; }
+.drop p { font-size:11px; color:var(--muted); }
+.info { font-size:11px; padding:8px 12px; border-radius:3px; margin-top:10px; display:none; }
+.info.show { display:block; }
+.info.ok { background:#eaf2ea; color:#2d6a30; }
+.info.err { background:#fdeaea; color:#a93226; }
+
+/* 컬럼 선택 카드 */
+#colSection { display:none; margin-top:16px; }
+.col-group { margin-bottom:14px; }
+.col-group-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+.col-group-label span { font-weight:700; font-size:12px; }
+.col-cards { display:flex; flex-wrap:wrap; gap:5px; }
+.col-card {
+  font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size:11px;
+  padding:4px 10px; border-radius:3px; cursor:pointer; user-select:none; transition:all 0.15s;
+  border:1px solid var(--unsel-border); background:var(--unsel-bg); color:var(--muted);
+}
+.col-card .idx { font-size:9px; opacity:0.6; margin-right:3px; }
+.col-card:hover { border-color:var(--accent); }
+.col-card.axis { background:var(--accent-light); border-color:var(--accent); color:#2d6a30; font-weight:500; }
+.col-card.color-col { background:var(--amber-light); border-color:var(--amber); color:var(--amber); font-weight:500; }
+.hint { font-size:10px; color:var(--muted); margin-top:6px; }
+
+/* 버튼 */
+.btn-row { display:flex; gap:10px; margin-top:16px; align-items:center; flex-wrap:wrap; }
+.btn { font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size:11px; font-weight:500; letter-spacing:0.06em; padding:9px 20px; border-radius:3px; border:none; cursor:pointer; transition:all 0.15s; }
+.btn-primary { background:var(--text); color:white; }
+.btn-primary:hover { background:#333; }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-dl { background:var(--accent); color:white; }
+.btn-dl:hover { background:#3a6340; }
+
+/* 선택 상태 */
+.sel-summary { font-size:11px; color:var(--muted); }
+.sel-summary b { color:var(--text); }
+
+/* 결과 */
+#resultSection { display:none; }
+.plot-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:24px; margin-bottom:20px; }
+.plot-title { font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size:14px; font-weight:700; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; }
+.dl-group { display:flex; gap:6px; }
+</style>
+<link rel="stylesheet" href="assets/common.css">
+</head>
+<body class="tool-page page-distribution">
+<nav class="site-nav" aria-label="분석 워크플로 단계">
+  <div class="site-nav-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark">OA</span><span><strong>Optimization Analysis</strong><small>Integrated Data Workflow</small></span></a>
+    <div class="workflow-nav"><a href="excel.html" class="workflow-link"><span class="workflow-num">01</span><span class="workflow-copy"><strong>엑셀 변환</strong><small>Raw → Excel</small></span></a><a href="convergence.html" class="workflow-link"><span class="workflow-num">02</span><span class="workflow-copy"><strong>수렴도 확인</strong><small>Hypervolume</small></span></a><a href="distribution.html" class="workflow-link active" aria-current="page"><span class="workflow-num">03</span><span class="workflow-copy"><strong>분포도</strong><small>Scatter Plot</small></span></a><a href="correlation.html" class="workflow-link"><span class="workflow-num">04</span><span class="workflow-copy"><strong>상관관계</strong><small>Heatmap</small></span></a></div>
+  </div>
+</nav>
+<main class="page-shell">
+
+<header class="tool-heading">
+  <div class="tool-kicker">STEP 03 · DISTRIBUTION</div>
+  <h1>데이터 <span>분포도</span></h1>
+  <p class="tool-description">변환된 데이터의 2D·3D 분포를 산점도로 확인합니다.</p>
+</header>
+
+<!-- 업로드 -->
+<div class="panel">
+  <div class="panel-title">파일 업로드</div>
+  <div class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <div style="font-size:24px;margin-bottom:8px;">📂</div>
+    <strong>엑셀 파일을 드래그하거나 클릭하여 업로드</strong>
+    <p>헤더 행 포함 · .xlsx</p>
+  </div>
+  <div class="info" id="fileInfo"></div>
+
+  <!-- 컬럼 선택 -->
+  <div id="colSection">
+    <div class="col-group">
+      <div class="col-group-label"><span style="color:var(--accent)">●</span> 축 컬럼 (최대 3개, 2D 또는 3D)</div>
+      <div class="col-cards" id="axisCards"></div>
+      <div class="hint">2개 선택 → 2D 산점도 / 3개 선택 → 3D + 2D 페어</div>
+    </div>
+    <div class="col-group" style="margin-top:12px;">
+      <div class="col-group-label"><span style="color:var(--amber)">●</span> 색상 컬럼 (선택 사항, 1개)</div>
+      <div class="col-cards" id="colorCards"></div>
+      <div class="hint">숫자형: 그라디언트 / 정수형 소범위: 카테고리 색상</div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="runBtn" disabled onclick="runPlot()">산점도 생성</button>
+    <span class="sel-summary" id="selSummary">컬럼을 선택하세요</span>
+  </div>
+</div>
+
+<!-- 결과 -->
+<div id="resultSection">
+  <div class="plot-card">
+    <div class="plot-title">
+      <span id="plot3dTitle">3D Scatter</span>
+      <div class="dl-group">
+        <button class="btn btn-dl" onclick="dl3d('png')">↓ PNG</button>
+        <button class="btn btn-dl" onclick="dl3dSVG()" id="btn3dSVG">↓ SVG (Matplotlib)</button>
+      </div>
+    </div>
+    <div id="plot3d" style="height:520px;"></div>
+    <div id="pyodideStatus" style="font-size:10px;color:var(--muted);margin-top:8px;">* SVG 버튼 클릭 시 Pyodide 로딩 시작 (최초 1회, 약 30초 소요). 개별 객체 편집 가능한 벡터 SVG로 저장됩니다.</div>
+  </div>
+  <div id="pairs2d"></div>
+</div>
+
+<script>
+let allRows = [], headers = [];
+let axisCols = [];   // 최대 3개
+let colorCol = null; // 1개
+
+// ── 파일 업로드 ──
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function showInfo(msg, type) {
+  const el = document.getElementById('fileInfo');
+  el.textContent = msg; el.className = `info show ${type}`;
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => parseExcel(e.target.result, file.name);
+  reader.readAsArrayBuffer(file);
+}
+
+function parseExcel(buffer, fname) {
+  try {
+    const wb = XLSX.read(buffer, { type:'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+    if (rows.length < 2) { showInfo('데이터가 부족합니다.','err'); return; }
+    headers = rows[0].map(h => String(h).trim());
+    allRows = rows.slice(1);
+    showInfo(`${fname} · ${allRows.length}행 · ${headers.length}개 컬럼 로드됨`, 'ok');
+    renderColCards();
+    document.getElementById('colSection').style.display = 'block';
+  } catch(e) { showInfo('파일 읽기 오류: ' + e.message, 'err'); }
+}
+
+function renderColCards() {
+  axisCols = []; colorCol = null;
+  updateSummary();
+  ['axisCards','colorCards'].forEach(id => {
+    const wrap = document.getElementById(id);
+    wrap.innerHTML = '';
+    headers.forEach((h, i) => {
+      const card = document.createElement('div');
+      card.className = 'col-card';
+      card.innerHTML = `<span class="idx">${i}:</span>${h}`;
+      card.dataset.idx = i;
+      card.dataset.header = h;
+      if (id === 'axisCards') card.addEventListener('click', () => toggleAxis(card, i, h));
+      else card.addEventListener('click', () => toggleColor(card, i, h));
+      wrap.appendChild(card);
+    });
+  });
+}
+
+function toggleAxis(card, idx, header) {
+  const pos = axisCols.findIndex(c => c.idx === idx);
+  if (pos !== -1) {
+    axisCols.splice(pos, 1);
+    card.classList.remove('axis');
+  } else {
+    if (axisCols.length >= 3) {
+      const removed = axisCols.shift();
+      document.querySelector(`#axisCards .col-card[data-idx="${removed.idx}"]`).classList.remove('axis');
+    }
+    axisCols.push({ idx, header });
+    card.classList.add('axis');
+  }
+  // 색상 카드와 중복 방지
+  if (colorCol && colorCol.idx === idx) {
+    document.querySelector(`#colorCards .col-card[data-idx="${idx}"]`).classList.remove('color-col');
+    colorCol = null;
+  }
+  updateSummary();
+}
+
+function toggleColor(card, idx, header) {
+  if (colorCol && colorCol.idx === idx) {
+    colorCol = null;
+    card.classList.remove('color-col');
+  } else {
+    if (colorCol) {
+      document.querySelector(`#colorCards .col-card[data-idx="${colorCol.idx}"]`).classList.remove('color-col');
+    }
+    colorCol = { idx, header };
+    card.classList.add('color-col');
+    // 축 컬럼과 중복 방지
+    const pos = axisCols.findIndex(c => c.idx === idx);
+    if (pos !== -1) {
+      axisCols.splice(pos, 1);
+      document.querySelector(`#axisCards .col-card[data-idx="${idx}"]`).classList.remove('axis');
+    }
+  }
+  updateSummary();
+}
+
+function updateSummary() {
+  const n = axisCols.length;
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled = n < 2;
+  const axNames = axisCols.map(c => c.header).join(', ');
+  const colName = colorCol ? ` | 색상: ${colorCol.header}` : '';
+  document.getElementById('selSummary').innerHTML =
+    n === 0 ? '컬럼을 선택하세요' :
+    `<b>${n}개 축</b>: ${axNames}${colName}`;
+}
+
+// ── 플롯 생성 ──
+function getColValues(idx) {
+  return allRows.map(row => {
+    const v = row[idx];
+    return (v !== '' && v !== null && !isNaN(Number(v))) ? Number(v) : null;
+  });
+}
+
+function getColorValues() {
+  if (!colorCol) return null;
+  const vals = allRows.map(row => row[colorCol.idx]);
+  const nums = vals.map(v => Number(v));
+  const allNum = nums.every(v => !isNaN(v));
+  if (!allNum) return { type:'cat', vals };
+  const uniq = [...new Set(nums)].sort((a,b)=>a-b);
+  const isCat = uniq.length <= 12 && uniq.every(v => Number.isInteger(v));
+  return isCat ? { type:'cat', vals:nums.map(v=>String(v)) } : { type:'cont', vals:nums };
+}
+
+const CAT_COLORS = ['#4a7c4e','#c46b2d','#3b5fa0','#8a2d8a','#8a2d2d','#2d7a8a','#6b8a2d','#8a6a00','#2d4a8a','#8a4a2d','#4a2d8a','#2d8a6a'];
+
+function makeMarker(data, filteredIdx) {
+  const colInfo = getColorValues();
+  if (!colInfo) return { size:6, color:'#4a7c4e', opacity:0.8 };
+
+  if (colInfo.type === 'cat') {
+    const subVals = filteredIdx.map(i => colInfo.vals[i]);
+    const uniq = [...new Set(subVals)].sort();
+    const colorArr = subVals.map(v => CAT_COLORS[uniq.indexOf(v) % CAT_COLORS.length]);
+    return { size:6, color:colorArr, opacity:0.8 };
+  } else {
+    const subVals = filteredIdx.map(i => colInfo.vals[i]);
+    return { size:6, color:subVals, colorscale:'RdBu', reversescale:true, opacity:0.8,
+      colorbar:{ title:colorCol.header, thickness:14, len:0.6 } };
+  }
+}
+
+function runPlot() {
+  const n = axisCols.length;
+  // joint NaN filtering
+  const colVals = axisCols.map(c => getColValues(c.idx));
+  const colorInfo = getColorValues();
+
+  const validIdx = allRows.map((_,i) => i).filter(i =>
+    colVals.every(cv => cv[i] !== null)
+  );
+
+  if (validIdx.length < 2) { alert('유효한 데이터가 2개 미만입니다.'); return; }
+
+  const filtered = axisCols.map((c,ai) => validIdx.map(i => colVals[ai][i]));
+  const marker = makeMarker(filtered, validIdx);
+
+  document.getElementById('resultSection').style.display = 'block';
+
+  // Pyodide SVG용 데이터 저장
+  window._scatter3dData = {
+    x: filtered[0], y: filtered[1], z: n === 3 ? filtered[2] : null,
+    xLabel: axisCols[0].header, yLabel: axisCols[1].header,
+    zLabel: n === 3 ? axisCols[2].header : null,
+    colorInfo: getColorValues(), filteredIdx: validIdx
+  };
+
+  const layout3d_base = {
+    paper_bgcolor:'#ffffff', showlegend:false,
+    margin:{l:0,r:0,t:20,b:0}, font:{family:'Noto Sans KR',size:10}
+  };
+  const layout2d_base = {
+    paper_bgcolor:'#ffffff', plot_bgcolor:'#f9f7f4',
+    margin:{l:60,r:20,t:20,b:60}, showlegend:false,
+    font:{family:'Noto Sans KR',size:10,color:'#6b6560'},
+    xaxis:{gridcolor:'#e0dbd2',linecolor:'#e0dbd2',zeroline:false},
+    yaxis:{gridcolor:'#e0dbd2',linecolor:'#e0dbd2',zeroline:false}
+  };
+
+  if (n === 3) {
+    // 3D 산점도
+    document.getElementById('plot3dTitle').textContent =
+      `3D Scatter — ${axisCols[0].header} × ${axisCols[1].header} × ${axisCols[2].header}`;
+    Plotly.react('plot3d', [{
+      type:'scatter3d', mode:'markers',
+      x:filtered[0], y:filtered[1], z:filtered[2],
+      marker,
+      text: validIdx.map(i => allRows[i][0] ?? i),
+      hovertemplate:`%{text}<br>${axisCols[0].header}: %{x}<br>${axisCols[1].header}: %{y}<br>${axisCols[2].header}: %{z}<extra></extra>`
+    }], {
+      ...layout3d_base,
+      scene:{
+        xaxis:{title:{text:axisCols[0].header}, gridcolor:'#e0dbd2'},
+        yaxis:{title:{text:axisCols[1].header}, gridcolor:'#e0dbd2'},
+        zaxis:{title:{text:axisCols[2].header}, gridcolor:'#e0dbd2'},
+        bgcolor:'#ffffff', camera:{eye:{x:1.5,y:1.5,z:1.2}}
+      }
+    }, {responsive:true, displayModeBar:true});
+
+    // 2D 페어 - 가로 한 줄
+    const pairs = [[0,1],[0,2],[1,2]];
+    const pairsDiv = document.getElementById('pairs2d');
+    pairsDiv.innerHTML = '';
+
+    const gridWrap = document.createElement('div');
+    gridWrap.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;';
+
+    pairs.forEach(([ai,bi]) => {
+      const pid = `plot2d_${ai}_${bi}`;
+      const card = document.createElement('div');
+      card.className = 'plot-card';
+      card.style.padding = '16px';
+      card.innerHTML = `
+        <div class="plot-title" style="font-size:12px;margin-bottom:10px;">
+          <span>${axisCols[ai].header} × ${axisCols[bi].header}</span>
+          <button class="btn btn-dl" style="font-size:9px;padding:4px 10px;" onclick="dlSVG('${pid}','scatter_${axisCols[ai].header}_vs_${axisCols[bi].header}')">↓ SVG</button>
+        </div>
+        <div id="${pid}" style="width:100%;aspect-ratio:1/1;"></div>`;
+      gridWrap.appendChild(card);
+    });
+
+    pairsDiv.appendChild(gridWrap);
+
+    setTimeout(() => {
+    pairs.forEach(([ai,bi]) => {
+      const pid = `plot2d_${ai}_${bi}`;
+      const el = document.getElementById(pid);
+      const sz = el ? el.offsetWidth : 300;
+      Plotly.newPlot(pid, [{
+        type:'scatter', mode:'markers',
+        x:filtered[ai], y:filtered[bi],
+        marker:{...marker, size:7},
+        text:validIdx.map(i=>allRows[i][0]??i),
+        hovertemplate:`%{text}<br>${axisCols[ai].header}: %{x}<br>${axisCols[bi].header}: %{y}<extra></extra>`
+      }], {
+        paper_bgcolor:'#ffffff', plot_bgcolor:'#f9f7f4',
+        width: sz, height: sz,
+        margin:{l:50,r:10,t:10,b:50}, showlegend:false,
+        font:{family:'Noto Sans KR',size:10,color:'#6b6560'},
+        xaxis:{gridcolor:'#e0dbd2',linecolor:'#e0dbd2',zeroline:false,title:{text:axisCols[ai].header}},
+        yaxis:{gridcolor:'#e0dbd2',linecolor:'#e0dbd2',zeroline:false,title:{text:axisCols[bi].header}}
+      }, {responsive:false, displayModeBar:false});
+    });
+    }, 0);
+
+  } else {
+    // 2D만
+    document.getElementById('plot3dTitle').textContent =
+      `2D Scatter — ${axisCols[0].header} × ${axisCols[1].header}`;
+    Plotly.react('plot3d', [{
+      type:'scatter', mode:'markers',
+      x:filtered[0], y:filtered[1],
+      marker:{...marker, size:7},
+      text:validIdx.map(i=>allRows[i][0]??i),
+      hovertemplate:`%{text}<br>${axisCols[0].header}: %{x}<br>${axisCols[1].header}: %{y}<extra></extra>`
+    }], {
+      paper_bgcolor:'#ffffff', plot_bgcolor:'#f9f7f4',
+      margin:{l:60,r:20,t:60,b:60}, showlegend:false,
+      font:{family:'Noto Sans KR',size:10,color:'#6b6560'},
+      xaxis:{gridcolor:'#e0dbd2',linecolor:'#e0dbd2',zeroline:false,title:{text:axisCols[0].header}},
+      yaxis:{gridcolor:'#e0dbd2',linecolor:'#e0dbd2',zeroline:false,title:{text:axisCols[1].header}}
+    }, {responsive:true, displayModeBar:true});
+    document.getElementById('pairs2d').innerHTML = '';
+  }
+
+  document.getElementById('resultSection').scrollIntoView({ behavior:'smooth' });
+}
+
+// ── 다운로드 ──
+function dlSVG(divId, fname) {
+  Plotly.downloadImage(divId, {format:'svg', filename:fname, width:900, height:500});
+}
+function dl3d(fmt) {
+  Plotly.downloadImage('plot3d', {format:fmt, filename:'scatter_3D', width:1000, height:700});
+}
+</script>
+<!-- Pyodide: 3D SVG export -->
+<script>
+let pyodideReady = null;
+
+async function initPyodide() {
+  const status = document.getElementById('pyodideStatus');
+  status.textContent = '⏳ Pyodide 로딩 중... (최초 1회, 약 30초 소요)';
+  const pyodide = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/' });
+  await pyodide.loadPackage('micropip');
+  await pyodide.runPythonAsync(`
+import micropip
+await micropip.install('matplotlib')
+  `);
+  status.textContent = '✓ Pyodide 로드 완료. SVG 버튼을 다시 클릭하세요.';
+  return pyodide;
+}
+
+async function dl3dSVG() {
+  const d = window._scatter3dData;
+  if (!d || !d.x || !d.z) { alert('3D 축 컬럼을 3개 선택 후 생성하세요.'); return; }
+  const btn = document.getElementById('btn3dSVG');
+  btn.textContent = '로딩 중...'; btn.disabled = true;
+  try {
+    if (!pyodideReady) {
+      if (!document.getElementById('pyodideScript')) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.id = 'pyodideScript';
+          s.src = 'https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js';
+          s.onload = resolve; s.onerror = reject;
+          document.head.appendChild(s);
+        });
+      }
+      pyodideReady = initPyodide();
+    }
+    const pyodide = await pyodideReady;
+    document.getElementById('pyodideStatus').textContent = '⏳ SVG 생성 중...';
+
+    // 색상 처리
+    const ci = d.colorInfo;
+    let pyColors = null, pyColorLabel = null, pyCatMode = false;
+    if (ci) {
+      pyColors = d.filteredIdx.map(i => ci.vals[i]);
+      pyColorLabel = colorCol ? colorCol.header : '';
+      pyCatMode = ci.type === 'cat';
+    }
+
+    pyodide.globals.set('px', d.x);
+    pyodide.globals.set('py', d.y);
+    pyodide.globals.set('pz', d.z);
+    pyodide.globals.set('xl', d.xLabel);
+    pyodide.globals.set('yl', d.yLabel);
+    pyodide.globals.set('zl', d.zLabel);
+    pyodide.globals.set('py_colors', pyColors);
+    pyodide.globals.set('py_color_label', pyColorLabel);
+    pyodide.globals.set('py_cat_mode', pyCatMode);
+
+    const svgStr = await pyodide.runPythonAsync(`
+import matplotlib
+matplotlib.use('svg')
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
+from io import BytesIO
+
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+
+xs = list(px)
+ys = list(py)
+zs = list(pz)
+
+if py_colors is not None:
+    raw = list(py_colors)
+    if py_cat_mode:
+        cats = sorted(set(str(v) for v in raw))
+        cmap_list = ['#4a7c4e','#c46b2d','#3b5fa0','#8a2d8a','#8a2d2d','#2d7a8a','#6b8a2d','#8a6a00']
+        for i, cat in enumerate(cats):
+            idx_c = [j for j, v in enumerate(raw) if str(v) == cat]
+            ax.scatter([xs[j] for j in idx_c], [ys[j] for j in idx_c], [zs[j] for j in idx_c],
+                      c=cmap_list[i % len(cmap_list)], s=30, alpha=0.85, label=str(cat))
+        ax.legend(title=str(py_color_label), fontsize=8, title_fontsize=8)
+    else:
+        nums = [float(v) for v in raw]
+        sc = ax.scatter(xs, ys, zs, c=nums, cmap='RdBu_r', s=30, alpha=0.85)
+        fig.colorbar(sc, ax=ax, label=str(py_color_label), shrink=0.6, pad=0.1)
+else:
+    ax.scatter(xs, ys, zs, c='#4a7c4e', s=30, alpha=0.85)
+
+ax.set_xlabel(str(xl), fontsize=9, labelpad=8)
+ax.set_ylabel(str(yl), fontsize=9, labelpad=8)
+ax.set_zlabel(str(zl), fontsize=9, labelpad=8)
+ax.grid(True, alpha=0.3)
+fig.patch.set_facecolor('white')
+ax.set_facecolor('#f9f7f4')
+plt.tight_layout()
+
+buf = BytesIO()
+plt.savefig(buf, format='svg', bbox_inches='tight')
+buf.seek(0)
+result = buf.read().decode('utf-8')
+plt.close()
+result
+`);
+    const blob = new Blob([svgStr], {type:'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='scatter_3D.svg'; a.click();
+    URL.revokeObjectURL(url);
+    document.getElementById('pyodideStatus').textContent = '✓ SVG 다운로드 완료.';
+  } catch(e) {
+    document.getElementById('pyodideStatus').textContent = '✗ 오류: ' + e.message;
+    console.error(e);
+  }
+  btn.textContent = '↓ SVG (Matplotlib)'; btn.disabled = false;
+}
+</script>
+<footer class="workflow-footer"><div><a class="flow-button secondary" href="convergence.html">← 이전 · 수렴도 확인</a></div><div><a class="flow-button primary" href="correlation.html">다음 단계 · 상관관계 →</a></div></footer>
+</main>
+</body>
+</html>

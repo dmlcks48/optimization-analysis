@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hypervolume 수렴도 확인 | Optimization Analysis Suite</title>
+<style>
+:root{
+  --bg:#ffffff;--surface:#f7f8f5;--s2:#eef0ea;
+  --border:#e0e3d8;--acc:#4a7c4e;--ok:#4a7c4e;
+  --acc-light:#e8f0e9;--acc2:#3a7ca5;--acc2-light:#e3eef5;
+  --err:#c0392b;--amb:#b07c1a;
+  --text:#1a1e18;--m:#7a8578;
+  --mono:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif;--sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;padding:48px 40px;min-height:100vh;min-width:1200px;}
+h1{font-family:var(--sans);font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1.05;margin-bottom:4px;}
+h1 span{color:var(--acc);}
+.sub{color:var(--m);font-size:12px;font-family:var(--mono);margin-bottom:36px;}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;transition:border-color .2s;}
+.step.done{border-color:#a8c5aa;background:#f4f9f4;}
+.snum{font-family:var(--mono);font-size:11px;color:var(--m);margin-bottom:6px;letter-spacing:.1em;text-transform:uppercase;}
+.step.done .snum{color:var(--ok);}
+.stitle{font-family:var(--sans);font-size:15px;font-weight:700;margin-bottom:14px;}
+
+.drop{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;}
+.drop:hover,.drop.drag{border-color:var(--acc);background:var(--acc-light);}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop .ico{font-size:20px;color:var(--m);margin-bottom:6px;}
+.drop strong{color:var(--text);font-size:13px;}
+.drop p{color:var(--m);font-size:11px;margin-top:3px;font-family:var(--mono);}
+
+.irow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ig{display:flex;flex-direction:column;gap:4px;}
+.ilabel{font-size:11px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.6px;}
+input[type=number]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;}
+input[type=number]:focus{border-color:var(--acc);}
+.hint{font-size:11px;color:var(--m);font-family:var(--mono);margin-top:2px;}
+
+.rgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;}
+.auto-b{display:inline-block;background:var(--acc-light);color:var(--acc);font-size:10px;font-family:var(--mono);padding:2px 6px;border-radius:4px;margin-left:4px;}
+
+.trow{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.trow label{font-size:12px;color:var(--m);white-space:nowrap;}
+input[type=range]{flex:1;accent-color:var(--acc);cursor:pointer;}
+.tval{font-family:var(--mono);font-size:13px;color:var(--acc);min-width:38px;text-align:right;}
+
+.run{width:100%;margin-top:14px;background:var(--acc);color:#fff;border:none;border-radius:10px;padding:11px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s,transform .1s;}
+.run:hover{opacity:.85;} .run:active{transform:scale(.98);} .run:disabled{opacity:.35;cursor:not-allowed;}
+
+.info{border-radius:8px;padding:9px 13px;font-size:12px;font-family:var(--mono);margin-top:8px;display:none;white-space:pre-wrap;line-height:1.5;}
+.info.show{display:block;}
+.info.ok{background:var(--acc-light);border:1px solid #a8c5aa;color:#2d5e31;}
+.info.err{background:#fdf0ef;border:1px solid #e8a09a;color:var(--err);}
+.info.warn{background:#fdf6e8;border:1px solid #d4b06a;color:var(--amb);}
+
+.stats{display:none;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0 16px;}
+.stats.show{display:grid;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 16px;}
+.sc .lb{font-size:11px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+.sc .vl{font-size:20px;font-weight:500;margin-top:4px;font-family:var(--mono);}
+.vl.ok{color:var(--acc);} .vl.acc{color:var(--acc2);} .vl.warn{color:var(--amb);}
+
+.tab-bar{display:none;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.tab-bar.show{display:flex;}
+.tab{padding:7px 18px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--m);font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s;}
+.tab:hover{border-color:var(--acc);color:var(--text);}
+.tab.active{background:var(--acc);border-color:var(--acc);color:#fff;}
+
+.panel{display:none;}
+.panel.active{display:block;}
+
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+.cc.full{grid-column:1/-1;}
+.cc canvas{display:block;width:100% !important;height:220px !important;}
+.cc.hv-large canvas{height:440px !important;}
+
+@media print{
+  body{padding:20px;min-width:unset;}
+  .steps,.run,.info,.twrap{display:none !important;}
+  .tab-bar{display:none !important;}
+  .panel{display:none !important;}
+  .panel.active{display:block !important;}
+  .stats.show{display:grid !important;}
+  .cgrid{break-inside:avoid;}
+  .cc{border:1px solid #ccc;break-inside:avoid;}
+  .print-btn{display:none !important;}
+  h1,p.sub{margin-bottom:12px;}
+}
+.ctitle{font-size:11px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;}
+.ctitle::after{content:' · 스크롤 확대 / 드래그 이동 / 더블클릭 초기화';font-size:10px;color:#bbb;letter-spacing:0;text-transform:none;}
+
+.leg{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap;}
+.lpill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--m);font-family:var(--mono);}
+.ldot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.lline{width:18px;height:2px;flex-shrink:0;}
+.lline.dashed{background:repeating-linear-gradient(90deg,currentColor 0,currentColor 4px,transparent 4px,transparent 8px);}
+
+.twrap{display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:24px;overflow-x:auto;}
+.twrap.show{display:block;}
+.ttitle{font-size:11px;color:var(--m);font-family:var(--mono);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px;}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+th{text-align:left;color:var(--m);font-weight:400;padding:6px 10px;border-bottom:1px solid var(--border);}
+td{padding:7px 10px;border-bottom:1px solid rgba(224,227,216,.8);color:var(--text);}
+tr:last-child td{border-bottom:none;}
+tr.stable td{color:var(--acc);}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);}
+.badge.ok{background:var(--acc-light);color:#2d5e31;}
+.badge.run{background:var(--acc2-light);color:var(--acc2);}
+.badge.start{background:var(--acc-light);color:#2d5e31;font-weight:500;}
+
+
+</style>
+<link rel="stylesheet" href="assets/common.css">
+</head>
+<body class="tool-page page-convergence">
+<nav class="site-nav" aria-label="분석 워크플로 단계">
+  <div class="site-nav-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark">OA</span><span><strong>Optimization Analysis</strong><small>Integrated Data Workflow</small></span></a>
+    <div class="workflow-nav"><a href="excel.html" class="workflow-link"><span class="workflow-num">01</span><span class="workflow-copy"><strong>엑셀 변환</strong><small>Raw → Excel</small></span></a><a href="convergence.html" class="workflow-link active" aria-current="page"><span class="workflow-num">02</span><span class="workflow-copy"><strong>수렴도 확인</strong><small>Hypervolume</small></span></a><a href="distribution.html" class="workflow-link"><span class="workflow-num">03</span><span class="workflow-copy"><strong>분포도</strong><small>Scatter Plot</small></span></a><a href="correlation.html" class="workflow-link"><span class="workflow-num">04</span><span class="workflow-copy"><strong>상관관계</strong><small>Heatmap</small></span></a></div>
+  </div>
+</nav>
+<main class="page-shell">
+
+<header class="tool-heading">
+  <div class="tool-kicker">STEP 02 · CONVERGENCE</div>
+  <h1>Hypervolume <span>수렴도 확인</span></h1>
+  <p class="tool-description">최적화 Raw 데이터의 Hypervolume 변화를 계산해 수렴·발산 여부를 확인합니다.</p>
+</header>
+
+<div class="steps">
+
+  <!-- Step 1 -->
+  <div class="step" id="step1">
+    <div class="snum">STEP 01</div>
+    <div class="stitle">파일 업로드</div>
+    <div class="drop" id="drop">
+      <input type="file" id="fInput">
+      <div class="ico">↑</div>
+      <strong>분석할 파일 업로드</strong>
+      <p>드래그 또는 클릭</p>
+    </div>
+    <div class="info" id="fInfo"></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step" id="step2">
+    <div class="snum">STEP 02</div>
+    <div class="stitle">세대 구조 입력</div>
+    <div class="irow">
+      <div class="ig">
+        <div class="ilabel">Generations</div>
+        <input type="number" id="genCount" min="1" placeholder="예) 30" oninput="onStructChange()">
+        <div class="hint" id="genHint">—</div>
+      </div>
+      <div class="ig">
+        <div class="ilabel">Population size</div>
+        <input type="number" id="popSize" min="1" placeholder="예) 20" oninput="onStructChange()">
+        <div class="hint" id="popHint">—</div>
+      </div>
+    </div>
+    <div class="info" id="structInfo"></div>
+    <div style="margin-top:14px;">
+      <div class="ilabel">면적차 임계값 (Obj4 ≤)</div>
+      <input type="number" id="areaT" style="margin-top:5px;" step="any" placeholder="0 이면 필터 없음">
+      <div class="hint">필터 전/후 HV를 동시에 계산합니다</div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step" id="step3">
+    <div class="snum">STEP 03</div>
+    <div class="stitle">HV 참조점 &amp; 기준</div>
+    <div class="rgrid">
+      <div class="ig">
+        <div class="ilabel">Obj1 UDI ref <span class="auto-b" id="b1" style="display:none">auto</span></div>
+        <input type="number" id="ref1" step="any" placeholder="worst">
+      </div>
+      <div class="ig">
+        <div class="ilabel">Obj2 탄소 ref <span class="auto-b" id="b2" style="display:none">auto</span></div>
+        <input type="number" id="ref2" step="any" placeholder="worst">
+      </div>
+      <div class="ig">
+        <div class="ilabel">Obj3 일사량 ref <span class="auto-b" id="b3" style="display:none">auto</span></div>
+        <input type="number" id="ref3" step="any" placeholder="worst">
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:10px;">업로드 시 자동 감지 (수동 수정 가능)</div>
+    <div class="ilabel">수렴 판단 기준</div>
+    <div class="trow">
+      <label>HV 변화율 &lt;</label>
+      <input type="range" id="thresh" min="0.5" max="10" step="0.5" value="3"
+        oninput="document.getElementById('tv').textContent=parseFloat(this.value).toFixed(1)+'%'">
+      <span class="tval" id="tv">3.0%</span>
+    </div>
+    <button class="run" id="runBtn" onclick="runAnalysis()" disabled>분석 실행</button>
+  </div>
+
+</div>
+
+<!-- Stats -->
+<div class="stats" id="statsRow">
+  <div class="sc"><div class="lb">총 세대</div><div class="vl acc" id="sGen">-</div></div>
+  <div class="sc"><div class="lb">최종 유효해 (필터 후)</div><div class="vl acc" id="sSol">-</div></div>
+  <div class="sc"><div class="lb">최종 HV (필터 후)</div><div class="vl ok" id="sHV">-</div></div>
+  <div class="sc"><div class="lb">수렴 세대 (필터 후)</div><div class="vl" id="sConv">-</div></div>
+  <div class="sc" style="grid-column:1/-1"><div class="lb">신뢰도</div><div class="vl" id="sTrust" style="font-size:14px;">-</div><div style="font-size:10px;color:var(--m);margin-top:4px;font-family:var(--mono);">수렴 세대가 전체의 70% 이전이면 신뢰할 수 있음</div></div>
+</div>
+
+<!-- Tabs -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;" id="tabBarWrap" class="tab-bar">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <button class="tab active" onclick="switchTab('overlay',this)">HV 비교 (overlay)</button>
+    <button class="tab" onclick="switchTab('before',this)">필터 전</button>
+    <button class="tab" onclick="switchTab('after',this)">필터 후</button>
+    <button class="tab" onclick="switchTab('obj',this)">목적함수 평균</button>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="exportExcel()" style="padding:7px 16px;border:1px solid var(--acc);border-radius:8px;background:var(--acc-light);color:var(--acc);font-family:var(--mono);font-size:12px;cursor:pointer;white-space:nowrap;">↓ 엑셀 내보내기</button>
+  </div>
+</div>
+
+<!-- Panel: overlay -->
+<div class="panel active" id="panel-overlay">
+  <div class="cgrid">
+    <div class="cc full hv-large">
+      <div class="ctitle">Hypervolume 추이 — 필터 전 vs 후</div>
+      <div class="leg">
+        <div class="lpill"><div class="ldot" style="background:#6c63ff"></div>필터 전 (전체 해)</div>
+        <div class="lpill"><div class="ldot" style="background:#00d4aa"></div>필터 후 (면적차 ≤ 임계값)</div>
+      </div>
+      <canvas id="c-ov" height="200"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Δ HV (%) — 필터 전</div>
+      <canvas id="c-ovd1" height="180"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Δ HV (%) — 필터 후 · 수렴 기준선</div>
+      <canvas id="c-ovd2" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Panel: before -->
+<div class="panel" id="panel-before">
+  <div class="cgrid">
+    <div class="cc hv-large">
+      <div class="ctitle">HV 추이 (필터 전)</div>
+      <canvas id="c-bhv" height="200"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Δ HV (%) (필터 전)</div>
+      <canvas id="c-bd" height="200"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">전체 해 수 / 세대</div>
+      <canvas id="c-bn" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Panel: after -->
+<div class="panel" id="panel-after">
+  <div class="cgrid">
+    <div class="cc hv-large">
+      <div class="ctitle">HV 추이 (필터 후)</div>
+      <canvas id="c-ahv" height="200"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Δ HV (%) (필터 후)</div>
+      <canvas id="c-ad" height="200"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">유효 해 수 / 세대</div>
+      <canvas id="c-an" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Panel: obj -->
+<div class="panel" id="panel-obj">
+  <div class="cgrid">
+    <div class="cc">
+      <div class="ctitle">Obj1 UDI역수 평균</div>
+      <div class="leg">
+        <div class="lpill"><div class="ldot" style="background:#6c63ff"></div>필터 전</div>
+        <div class="lpill"><div class="ldot" style="background:#6c63ff;opacity:.45"></div>필터 후 (점선)</div>
+      </div>
+      <canvas id="c-o1" height="180"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Obj2 내재탄소 평균</div>
+      <div class="leg">
+        <div class="lpill"><div class="ldot" style="background:#f0a500"></div>필터 전</div>
+        <div class="lpill"><div class="ldot" style="background:#f0a500;opacity:.45"></div>필터 후 (점선)</div>
+      </div>
+      <canvas id="c-o2" height="180"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Obj3 벽면일사량 평균</div>
+      <div class="leg">
+        <div class="lpill"><div class="ldot" style="background:#ff6b6b"></div>필터 전</div>
+        <div class="lpill"><div class="ldot" style="background:#ff6b6b;opacity:.45"></div>필터 후 (점선)</div>
+      </div>
+      <canvas id="c-o3" height="180"></canvas>
+    </div>
+    <div class="cc">
+      <div class="ctitle">Obj4 면적차 평균 (전체 해)</div>
+      <canvas id="c-o4" height="180"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="twrap" id="tWrap">
+  <div class="ttitle">세대별 상세 데이터</div>
+  <table>
+    <thead>
+      <tr>
+        <th>세대</th>
+        <th>전체 해</th><th>유효 해</th>
+        <th>HV (전)</th><th>HV (후)</th>
+        <th>Δ HV (전)</th><th>Δ HV (후)</th>
+        <th>O1 UDI</th><th>O2 탄소</th><th>O3 일사량</th>
+        <th>판정 (후)</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<script>
+Chart.defaults.color='#7a8578';
+Chart.defaults.font.family="'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif";
+Chart.defaults.font.size=11;
+
+const GRID='rgba(224,227,216,0.8)';
+const CA='#4a7c4e',COK='#3a7ca5',CERR='#c0392b',CAMB='#b07c1a';
+
+let rawVals=[],charts={};
+
+// ── Upload
+const dropEl=document.getElementById('drop');
+const fInp=document.getElementById('fInput');
+dropEl.addEventListener('dragover',e=>{e.preventDefault();dropEl.classList.add('drag');});
+dropEl.addEventListener('dragleave',()=>dropEl.classList.remove('drag'));
+dropEl.addEventListener('drop',e=>{e.preventDefault();dropEl.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
+fInp.addEventListener('change',()=>handleFile(fInp.files[0]));
+
+function handleFile(f){
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      // 확장자 무관하게 ArrayBuffer로 읽어 SheetJS로 파싱
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const vals=[];
+      const range=XLSX.utils.decode_range(ws['!ref']||'A1');
+      for(let row=1;row<=range.e.r;row++){
+        const addr=XLSX.utils.encode_cell({r:row,c:0});
+        const cell=ws[addr];
+        if(!cell)continue;
+        // t:'n'=숫자셀, t:'s'=문자열셀 모두 처리
+        let v;
+        if(cell.t==='n'){v=cell.v;}
+        else{v=parseFloat(String(cell.w||cell.v||'').replace(/,/g,'').trim());}
+        if(!isNaN(v))vals.push(v);
+      }
+      finishParse(vals,f.name);
+    }catch(err){
+      showInfo('fInfo','파일 읽기 실패: '+err.message,'err');
+    }
+  };
+  r.readAsArrayBuffer(f);
+}
+
+function finishParse(vals,name){
+  rawVals=vals;
+  const total=Math.floor(rawVals.length/10);
+  showInfo('fInfo',`${name} · ${rawVals.length}행 · ${total}개 해 감지`,'ok');
+  document.getElementById('step1').classList.add('done');
+
+  const o1=[],o2=[],o3=[];
+  for(let i=0;i+2<rawVals.length;i+=10){o1.push(rawVals[i]);o2.push(rawVals[i+1]);o3.push(rawVals[i+2]);}
+  setRef('ref1','b1',Math.max(...o1)*1.1);
+  setRef('ref2','b2',Math.max(...o2)*1.1);
+  setRef('ref3','b3',Math.max(...o3)*1.1);
+  onStructChange();
+}
+
+function setRef(id,bid,val){
+  const el=document.getElementById(id);
+  if(!el.value){el.value=+val.toFixed(4);document.getElementById(bid).style.display='inline-block';}
+  el.addEventListener('input',()=>document.getElementById(bid).style.display='none',{once:true});
+}
+
+function onStructChange(){
+  if(!rawVals.length)return;
+  const pop=parseInt(document.getElementById('popSize').value);
+  const gen=parseInt(document.getElementById('genCount').value);
+  const total=Math.floor(rawVals.length/10);
+  document.getElementById('popHint').textContent=pop&&gen?`× ${gen}세대 = ${pop*gen}개 해 필요`:'—';
+  document.getElementById('genHint').textContent=pop&&gen?`× ${pop}개 = ${pop*gen}개 해 필요`:'—';
+  if(!pop||!gen||pop<1||gen<1){showInfo('structInfo','두 값을 모두 입력해주세요.','warn');document.getElementById('runBtn').disabled=true;return;}
+  if(pop*gen!==total){
+    showInfo('structInfo',`불일치: ${pop}×${gen}=${pop*gen} / 실제: ${total}개 해\n값을 조정해주세요.`,'err');
+    document.getElementById('runBtn').disabled=true;
+  }else{
+    showInfo('structInfo',`확인: ${pop}개 × ${gen}세대 = ${total}개 해 ✓`,'ok');
+    document.getElementById('runBtn').disabled=false;
+    document.getElementById('step2').classList.add('done');
+    document.getElementById('step3').classList.add('done');
+  }
+}
+
+function showInfo(id,msg,type){
+  const el=document.getElementById(id);
+  el.textContent=msg;el.className=`info show ${type}`;
+}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Analysis
+function runAnalysis(){
+  const pop=parseInt(document.getElementById('popSize').value);
+  const gen=parseInt(document.getElementById('genCount').value);
+  const ref=[
+    parseFloat(document.getElementById('ref1').value),
+    parseFloat(document.getElementById('ref2').value),
+    parseFloat(document.getElementById('ref3').value),
+  ];
+  const areaT=parseFloat(document.getElementById('areaT').value)||Infinity;
+  const threshP=parseFloat(document.getElementById('thresh').value);
+  if(ref.some(isNaN)){alert('참조점 3개를 입력해주세요.');return;}
+
+  const sols=[];
+  for(let i=0;i+9<rawVals.length;i+=10)
+    sols.push({o1:rawVals[i],o2:rawVals[i+1],o3:rawVals[i+2],o4:rawVals[i+3]});
+
+  const gd=[];
+  for(let g=0;g<gen;g++){
+    const all=sols.slice(g*pop,(g+1)*pop);
+    const valid=areaT===Infinity?all:all.filter(s=>s.o4<=areaT);
+    gd.push({g,all,valid});
+  }
+
+  // Min-Max 정규화: 전체 해 기준 각 목적함수의 min/max 산출
+  // 정규화 후: 최솟값 → 0, 최댓값 → 1 (HV 계산용)
+  // 참조점은 정규화 공간에서 [1.1, 1.1, 1.1]로 설정
+  const allSols = sols;
+  const minO = [
+    Math.min(...allSols.map(s=>s.o1)),
+    Math.min(...allSols.map(s=>s.o2)),
+    Math.min(...allSols.map(s=>s.o3))
+  ];
+  const maxO = [
+    Math.max(...allSols.map(s=>s.o1)),
+    Math.max(...allSols.map(s=>s.o2)),
+    Math.max(...allSols.map(s=>s.o3))
+  ];
+  const rangeO = maxO.map((mx,i) => mx - minO[i] || 1);
+  const normPt = pt => pt.map((v,i) => (v - minO[i]) / rangeO[i]);
+  const normRef = [1.1, 1.1, 1.1];
+  const hvB=gd.map(g=>g.all.length?computeHV(g.all.map(s=>normPt([s.o1,s.o2,s.o3])),normRef):0);
+  const hvA=gd.map(g=>g.valid.length?computeHV(g.valid.map(s=>normPt([s.o1,s.o2,s.o3])),normRef):0);
+
+  const delta=arr=>arr.map((v,i)=>{
+    if(i===0||arr[i-1]===0)return null;
+    return(v-arr[i-1])/arr[i-1]*100;
+  });
+  const dB=delta(hvB),dA=delta(hvA);
+
+  // 수렴 판정: i세대 이후 세대 중 90% 이상의 HV 변화율이 +-threshP% 이내인 첫 세대
+  // 이상치(outlier) 세대가 일부 있어도 전체적으로 안정적이면 수렴으로 판단
+  // 신뢰도 기준: 수렴 세대가 전체 세대의 70% 이전이면 신뢰할 수 있음
+  // (예: 100세대 기준 Gen 70 이전 수렴 -> 신뢰 / Gen 70 이후 수렴 -> 세대 추가 권장)
+  const STABLE_RATIO = 0.95; // 이후 세대의 95% 이상이 ±thresh 이내면 수렴
+  let convGen=null;
+  for(let i=1;i<dA.length;i++){
+    const rest=dA.slice(i).filter(d=>d!==null);
+    if(!rest.length) continue;
+    const stableCount=rest.filter(d=>Math.abs(d)<threshP).length;
+    if(stableCount/rest.length>=STABLE_RATIO){convGen=i;break;}
+  }
+
+  // 수렴 이후 이상치 세대 수 계산
+  let outlierCount=0;
+  if(convGen!==null){
+    const postConv=dA.slice(convGen).filter(d=>d!==null);
+    outlierCount=postConv.filter(d=>Math.abs(d)>=threshP).length;
+  }
+
+  const mAll=fn=>gd.map(g=>g.all.length?avg(g.all.map(fn)):null);
+  const mVal=fn=>gd.map(g=>g.valid.length?avg(g.valid.map(fn)):null);
+  const o1A=mAll(s=>s.o1),o1V=mVal(s=>s.o1);
+  const o2A=mAll(s=>s.o2),o2V=mVal(s=>s.o2);
+  const o3A=mAll(s=>s.o3),o3V=mVal(s=>s.o3);
+  const o4A=mAll(s=>s.o4);
+  const cntA=gd.map(g=>g.all.length),cntV=gd.map(g=>g.valid.length);
+
+  // 내보내기용 데이터 저장
+  window._exportData = {hvB,hvA,dB,dA,o1A,o2A,o3A,o4A,cntA,cntV,convGen,thP:threshP,gen};
+
+  renderStats(gen,gd[gen-1].valid.length,gd[gen-1].all.length,hvA,convGen,outlierCount);
+  renderCharts(hvB,hvA,dB,dA,cntA,cntV,o1A,o1V,o2A,o2V,o3A,o3V,o4A,convGen,threshP);
+  renderTable(gd,hvB,hvA,dB,dA,o1A,o2A,o3A,convGen,threshP);
+
+  ['statsRow','tWrap'].forEach(id=>document.getElementById(id).classList.add('show'));
+  document.getElementById('tabBarWrap').classList.add('show');
+}
+
+// ── HV
+function computeHV(pts,ref){
+  const nd=nonDom3(pts);if(!nd.length)return 0;
+  nd.sort((a,b)=>b[0]-a[0]);
+  let hv=0,sw=[];
+  for(let i=0;i<nd.length;i++){
+    const p=nd[i];
+    const dx=i===0?ref[0]-p[0]:nd[i-1][0]-p[0];
+    sw.push([p[1],p[2]]);
+    hv+=dx*hv2d(sw,[ref[1],ref[2]]);
+  }
+  return Math.max(0,hv);
+}
+function hv2d(pts,ref){
+  const nd=nonDom2(pts);nd.sort((a,b)=>a[0]-b[0]);
+  let a=0,py=ref[1];
+  for(const p of nd){a+=(ref[0]-p[0])*(py-p[1]);py=p[1];}
+  return Math.max(0,a);
+}
+function nonDom3(pts){return pts.filter((p,i)=>!pts.some((q,j)=>i!==j&&q[0]<=p[0]&&q[1]<=p[1]&&q[2]<=p[2]&&(q[0]<p[0]||q[1]<p[1]||q[2]<p[2])));}
+function nonDom2(pts){return pts.filter((p,i)=>!pts.some((q,j)=>i!==j&&q[0]<=p[0]&&q[1]<=p[1]&&(q[0]<p[0]||q[1]<p[1])));}
+function avg(a){return a.reduce((s,v)=>s+v,0)/a.length;}
+
+// ── Stats
+function renderStats(gen,validL,allL,hvA,cg,outlierCount){
+  document.getElementById('sGen').textContent=gen;
+  document.getElementById('sSol').textContent=`${validL} / ${allL}`;
+  document.getElementById('sHV').textContent=hvA[hvA.length-1].toExponential(3);
+  const el=document.getElementById('sConv');
+  const trustEl=document.getElementById('sTrust');
+  if(cg!==null){
+    el.textContent=`Gen ${cg}`;
+    const ratio=cg/gen;
+    const outlierTxt = outlierCount>0 ? ` · 이상치 ${outlierCount}세대 포함` : '';
+    if(ratio<0.7){
+      el.className='vl ok';
+      trustEl.textContent=`신뢰 (전체의 ${Math.round(ratio*100)}% 지점)${outlierTxt}`;
+      trustEl.className='vl ok';
+    }else{
+      el.className='vl warn';
+      trustEl.textContent=`세대 추가 권장 (전체의 ${Math.round(ratio*100)}% 지점)${outlierTxt}`;
+      trustEl.className='vl warn';
+    }
+  }else{
+    el.textContent='미수렴';
+    el.className='vl warn';
+    trustEl.textContent='세대 추가 필요';
+    trustEl.className='vl warn';
+  }
+}
+
+// ── Charts helpers
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const LB=n=>Array.from({length:n},(_,i)=>`G${i}`);
+
+function convAnn(cg){
+  if(cg===null)return{};
+  return{conv:{type:'line',xMin:cg,xMax:cg,borderColor:COK,borderWidth:1.5,borderDash:[4,3],
+    label:{content:'수렴',display:true,color:COK,font:{size:10},position:'start'}}};
+}
+function threshAnn(t,cg){
+  return{...convAnn(cg),
+    tp:{type:'line',yMin:t,yMax:t,borderColor:COK,borderWidth:1,borderDash:[4,3],
+      label:{content:`+${t}%`,display:true,color:COK,font:{size:10},position:'end'}},
+    tn:{type:'line',yMin:-t,yMax:-t,borderColor:COK,borderWidth:1,borderDash:[4,3]}};
+}
+function scaleOpts(yLabel, yMin, yMax){
+  return{x:{grid:{color:GRID},ticks:{maxTicksLimit:14}},
+         y:{grid:{color:GRID},
+            title:yLabel?{display:true,text:yLabel,color:'#6b6b80'}:undefined,
+            ...(yMin!==undefined?{min:yMin}:{}),
+            ...(yMax!==undefined?{max:yMax}:{})}};
+}
+function lineDs(data,color,dash=[]){
+  return{data,borderColor:color,backgroundColor:'transparent',
+    fill:false,tension:.35,pointRadius:2,pointBackgroundColor:color,borderWidth:2,borderDash:dash};
+}
+function areaDs(data,color,label=''){
+  const rgb=color==='#6c63ff'?'108,99,255':color==='#00d4aa'?'0,212,170':'108,99,255';
+  return{label,data,borderColor:color,backgroundColor:`rgba(${rgb},.07)`,
+    fill:true,tension:.35,pointRadius:2.5,pointBackgroundColor:color,borderWidth:2};
+}
+function barDs(data,thP){
+  return{data:data.map(d=>d===null?null:+d.toFixed(2)),
+    backgroundColor:data.map(d=>d===null?'transparent':Math.abs(d)<thP?'rgba(0,212,170,.4)':'rgba(108,99,255,.4)'),
+    borderColor:data.map(d=>d===null?'transparent':Math.abs(d)<thP?COK:CA),borderWidth:1};
+}
+function mkChart(id,type,data,options){
+  dc(id);
+  // zoom 플러그인 기본 옵션 합성
+  const zoomOpts={plugins:{...(options.plugins||{}),zoom:{zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:'x'},pan:{enabled:true,mode:'x'}}}};
+  const merged={...options,...zoomOpts,plugins:{...( options.plugins||{}), ...zoomOpts.plugins}};
+  charts[id]=new Chart(document.getElementById(id),{type,data,options:merged});
+}
+
+// 차트 더블클릭 시 줌 초기화
+document.addEventListener('dblclick',e=>{
+  const canvas=e.target.closest('canvas');
+  if(!canvas)return;
+  const id=canvas.id;
+  if(charts[id]&&charts[id].resetZoom)charts[id].resetZoom();
+});
+
+function renderCharts(hvB,hvA,dB,dA,cntA,cntV,o1A,o1V,o2A,o2V,o3A,o3V,o4A,cg,thP){
+  const lb=LB(hvB.length);
+  const base=(ann,yl,yMin,yMax)=>({responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},annotation:{annotations:ann}},scales:scaleOpts(yl,yMin,yMax)});
+
+  // HV Y축 범위 계산 (전체 HV 데이터 기준 고정)
+  const allHV = [...hvB,...hvA].filter(v=>v!==null&&v!==undefined);
+  const hvMin = Math.floor(Math.min(...allHV) * 0.97);
+  const hvMax = Math.ceil(Math.max(...allHV)  * 1.02);
+
+  // Overlay HV
+  mkChart('c-ov','line',{labels:lb,datasets:[areaDs(hvB,CA,'필터 전 (전체 해)'),areaDs(hvA,COK,'필터 후 (면적차 적용)')]},
+    {...base(convAnn(cg),'HV',hvMin,hvMax), maintainAspectRatio:false,
+     plugins:{legend:{display:true,labels:{color:'#6b6b80',font:{size:11},boxWidth:12,padding:10}},
+              annotation:{annotations:convAnn(cg)}}});
+
+  // Overlay delta
+  mkChart('c-ovd1','bar',{labels:lb,datasets:[barDs(dB,thP)]},base(threshAnn(thP,null),'Δ HV (%)'));
+  mkChart('c-ovd2','bar',{labels:lb,datasets:[barDs(dA,thP)]},base(threshAnn(thP,cg),'Δ HV (%)'));
+
+  // Before panel
+  mkChart('c-bhv','line',{labels:lb,datasets:[areaDs(hvB,CA)]},base({},'HV',hvMin,hvMax));
+  mkChart('c-bd','bar',{labels:lb,datasets:[barDs(dB,thP)]},base(threshAnn(thP,null),'Δ HV (%)'));
+  mkChart('c-bn','bar',{labels:lb,datasets:[{data:cntA,backgroundColor:'rgba(108,99,255,.35)',borderColor:CA,borderWidth:1}]},
+    {...base({},'해 수'),scales:{...scaleOpts('해 수'),y:{...scaleOpts().y,beginAtZero:true}}});
+
+  // After panel
+  mkChart('c-ahv','line',{labels:lb,datasets:[areaDs(hvA,COK)]},base(convAnn(cg),'HV',hvMin,hvMax));
+  mkChart('c-ad','bar',{labels:lb,datasets:[barDs(dA,thP)]},base(threshAnn(thP,cg),'Δ HV (%)'));
+  mkChart('c-an','bar',{labels:lb,datasets:[{data:cntV,backgroundColor:'rgba(0,212,170,.35)',borderColor:COK,borderWidth:1}]},
+    {...base(convAnn(cg),'해 수'),scales:{...scaleOpts('해 수'),y:{...scaleOpts().y,beginAtZero:true}}});
+
+  // Obj panels (solid=all, dashed=valid)
+  function objChart(id,allD,valD,color){
+    mkChart(id,'line',{labels:lb,datasets:[lineDs(allD,color,[]),lineDs(valD,color,[4,3])]},base(convAnn(cg)));
+  }
+  objChart('c-o1',o1A,o1V,CA);
+  objChart('c-o2',o2A,o2V,CAMB);
+  objChart('c-o3',o3A,o3V,CERR);
+  mkChart('c-o4','line',{labels:lb,datasets:[lineDs(o4A,'#888888',[])]},base({}));
+}
+
+// ── Table
+function renderTable(gd,hvB,hvA,dB,dA,o1m,o2m,o3m,cg,thP){
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  gd.forEach((g,i)=>{
+    const isConv=cg!==null&&i>=cg;
+    const isOutlier=isConv&&dA[i]!==null&&Math.abs(dA[i])>=thP;
+    const tr=document.createElement('tr');
+    if(isConv)tr.classList.add('stable');
+    if(isOutlier)tr.style.background='rgba(255,180,0,0.08)';
+    const fd=d=>d===null?'-':d.toFixed(2)+'%';
+    const bdg=d=>d===null?'':Math.abs(d)<thP?`<span class="badge ok">수렴</span>`:`<span class="badge run">탐색</span>`;
+    const conv=i===cg?`<span class="badge start">← 수렴 시작</span>`:isOutlier?`<span class="badge run">이상치</span>`:isConv?`<span class="badge ok">안정</span>`:``;
+    tr.innerHTML=`
+      <td>Gen ${i}</td>
+      <td>${g.all.length}</td><td>${g.valid.length}</td>
+      <td>${hvB[i].toExponential(3)}</td><td>${hvA[i].toExponential(3)}</td>
+      <td>${fd(dB[i])} ${bdg(dB[i])}</td>
+      <td>${fd(dA[i])} ${bdg(dA[i])}</td>
+      <td>${o1m[i]!==null?o1m[i].toFixed(4):'-'}</td>
+      <td>${o2m[i]!==null?o2m[i].toFixed(2):'-'}</td>
+      <td>${o3m[i]!==null?o3m[i].toFixed(2):'-'}</td>
+      <td>${conv}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+
+// ── 엑셀 내보내기
+function exportExcel(){
+  if(!window._exportData){ alert('먼저 데이터를 분석해주세요.'); return; }
+  const {hvB,hvA,dB,dA,o1A,o2A,o3A,o4A,cntA,cntV,convGen,thP,gen} = window._exportData;
+  const wb = XLSX.utils.book_new();
+
+  const hdr1 = ['세대','HV (필터 전)','HV (필터 후)','ΔHV% (필터 전)','ΔHV% (필터 후)','전체 해 수','유효 해 수','수렴 여부'];
+  const rows1 = [hdr1];
+  for(let i=0;i<gen;i++){
+    const isConv = convGen!==null && i>=convGen;
+    const isOutlier = isConv && dA[i]!==null && Math.abs(dA[i])>=thP;
+    rows1.push([i+1, hvB[i]??'', hvA[i]??'',
+      dB[i]!==null?+dB[i].toFixed(4):'', dA[i]!==null?+dA[i].toFixed(4):'',
+      cntA[i]??'', cntV[i]??'',
+      i===convGen?'수렴 시작':isOutlier?'이상치':isConv?'안정':'탐색']);
+  }
+  const ws1 = XLSX.utils.aoa_to_sheet(rows1);
+  ws1['!cols']=[{wch:6},{wch:14},{wch:14},{wch:14},{wch:14},{wch:10},{wch:10},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'HV 수렴 데이터');
+
+  const hdr2 = ['세대','Obj1 (UDI역수)','Obj2 (E.C)','Obj3 (RA)','Obj4 (면적차)'];
+  const rows2 = [hdr2];
+  for(let i=0;i<gen;i++){
+    rows2.push([i+1,
+      o1A[i]!==null?+o1A[i].toFixed(6):'', o2A[i]!==null?+o2A[i].toFixed(6):'',
+      o3A[i]!==null?+o3A[i].toFixed(6):'', o4A[i]!==null?+o4A[i].toFixed(6):'']);
+  }
+  const ws2 = XLSX.utils.aoa_to_sheet(rows2);
+  ws2['!cols']=[{wch:6},{wch:16},{wch:14},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws2, '목적함수 평균');
+
+  XLSX.writeFile(wb, 'wallacei_convergence_data.xlsx');
+}
+</script>
+<footer class="workflow-footer"><div><a class="flow-button secondary" href="excel.html">← 이전 · 엑셀 변환</a></div><div><a class="flow-button primary" href="distribution.html">다음 단계 · 분포도 →</a></div></footer>
+</main>
+</body>
+</html>

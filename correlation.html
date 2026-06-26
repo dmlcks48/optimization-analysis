@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>지표 상관관계 | Optimization Analysis Suite</title>
+<style>
+:root {
+  --bg: #f5f2ed;
+  --surface: #ffffff;
+  --border: #e0dbd2;
+  --text: #1a1814;
+  --muted: #6b6560;
+  --accent: #4a7c4e;
+  --accent-light: #eaf2ea;
+  --unselected-bg: #f0ede8;
+  --unselected-border: #d4cfc8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; background: var(--bg); color: var(--text); padding: 40px 36px; min-height: 100vh; }
+h1 { font-family: 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+h1 span { color: var(--accent); }
+.sub { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 32px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 24px; margin-bottom: 20px; }
+.panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 16px; font-weight: 500; }
+.drop { border: 2px dashed var(--border); border-radius: 4px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+.drop:hover, .drop.drag { border-color: var(--accent); background: #f0f5f0; }
+.drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.drop-icon { font-size: 24px; margin-bottom: 8px; }
+.drop strong { font-size: 13px; display: block; margin-bottom: 4px; }
+.drop p { font-size: 11px; color: var(--muted); }
+.info { font-size: 11px; padding: 8px 12px; border-radius: 3px; margin-top: 10px; display: none; }
+.info.show { display: block; }
+.info.ok { background: #eaf2ea; color: #2d6a30; }
+.info.err { background: #fdeaea; color: #a93226; }
+.btn-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+.btn { font-family: 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.06em; padding: 9px 20px; border-radius: 3px; border: none; cursor: pointer; transition: all 0.15s; }
+.btn-primary { background: var(--text); color: white; }
+.btn-primary:hover { background: #333; }
+.btn-download { background: var(--accent); color: white; }
+.btn-download:hover { background: #3a6340; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.scheme-btn { font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif; font-size:10px; padding:5px 12px; border-radius:3px; border:1px solid var(--border); cursor:pointer; background:white; transition:all 0.15s; }
+.scheme-btn.active { border-color:var(--accent); background:var(--accent); color:white; }
+.scheme-btn:hover:not(.active) { border-color:var(--text); }
+
+/* 헤더 선택 카드 */
+#headerSection { display: none; margin-top: 16px; }
+.header-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; }
+#headerCards { display: flex; flex-wrap: wrap; gap: 6px; }
+.hdr-card {
+  font-family: 'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  border: 1px solid var(--unselected-border);
+  background: var(--unselected-bg);
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+.hdr-card .col-idx { font-size: 9px; opacity: 0.6; margin-right: 4px; }
+.hdr-card:hover { border-color: var(--accent); }
+.hdr-card.selected {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: #2d6a30;
+  font-weight: 500;
+}
+.select-hint { font-size: 10px; color: var(--muted); margin-top: 8px; }
+.selected-count { font-size: 11px; color: var(--accent); font-weight: 500; }
+
+/* Result */
+#result { display: none; }
+.heatmap-wrap { overflow-x: auto; }
+.legend-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 11px; color: var(--muted); }
+.legend-bar { width: 200px; height: 12px; border-radius: 2px; border: 1px solid var(--border); }
+.legend-labels { display: flex; justify-content: space-between; width: 200px; font-size: 10px; }
+</style>
+<link rel="stylesheet" href="assets/common.css">
+</head>
+<body class="tool-page page-correlation">
+<nav class="site-nav" aria-label="분석 워크플로 단계">
+  <div class="site-nav-inner">
+    <a class="site-brand" href="index.html"><span class="brand-mark">OA</span><span><strong>Optimization Analysis</strong><small>Integrated Data Workflow</small></span></a>
+    <div class="workflow-nav"><a href="excel.html" class="workflow-link"><span class="workflow-num">01</span><span class="workflow-copy"><strong>엑셀 변환</strong><small>Raw → Excel</small></span></a><a href="convergence.html" class="workflow-link"><span class="workflow-num">02</span><span class="workflow-copy"><strong>수렴도 확인</strong><small>Hypervolume</small></span></a><a href="distribution.html" class="workflow-link"><span class="workflow-num">03</span><span class="workflow-copy"><strong>분포도</strong><small>Scatter Plot</small></span></a><a href="correlation.html" class="workflow-link active" aria-current="page"><span class="workflow-num">04</span><span class="workflow-copy"><strong>상관관계</strong><small>Heatmap</small></span></a></div>
+  </div>
+</nav>
+<main class="page-shell">
+
+<header class="tool-heading">
+  <div class="tool-kicker">STEP 04 · CORRELATION</div>
+  <h1>지표 <span>상관관계</span></h1>
+  <p class="tool-description">선택한 지표 간 Pearson 또는 Spearman 상관관계를 히트맵으로 분석합니다.</p>
+</header>
+
+<div class="panel">
+  <div class="panel-title">파일 업로드 및 컬럼 선택</div>
+  <div class="drop" id="dropZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <div class="drop-icon">📂</div>
+    <strong>엑셀 파일을 드래그하거나 클릭하여 업로드</strong>
+    <p>헤더 행 포함 · .xlsx</p>
+  </div>
+  <div class="info" id="fileInfo"></div>
+
+  <div id="headerSection">
+    <div class="header-label" style="margin-top:16px;">
+      컬럼 선택 &nbsp;<span class="selected-count" id="selectedCount">0개 선택됨</span>
+    </div>
+    <div id="headerCards"></div>
+    <div class="select-hint">클릭하여 선택 · 2개 이상 선택 후 히트맵 생성</div>
+  </div>
+
+  <div class="btn-row">
+    <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Method</span>
+    <button class="btn scheme-btn active" id="btnPearson" onclick="setMethod('pearson')">Pearson</button>
+    <button class="btn scheme-btn" id="btnSpearman" onclick="setMethod('spearman')">Spearman</button>
+    <button class="btn btn-primary" id="runBtn" disabled onclick="runAnalysis()">히트맵 생성</button>
+    <button class="btn btn-download" id="dlSVG" style="display:none" onclick="downloadSVG()">↓ SVG</button>
+    <button class="btn btn-download" id="dlCSV" style="display:none" onclick="downloadCSV()">↓ CSV</button>
+  </div>
+</div>
+
+<div class="panel" id="result">
+  <div class="panel-title" id="resultTitle">Correlation Matrix</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Color Scheme</span>
+    <div id="schemeButtons" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+  <div class="heatmap-wrap" id="heatmapContainer"></div>
+  <div class="legend-row">
+    <span>−1.0</span>
+    <div>
+      <div class="legend-bar" id="legendBar"></div>
+      <div class="legend-labels"><span>Negative</span><span>0</span><span>Positive</span></div>
+    </div>
+    <span>+1.0</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let allRows = [];
+let headers = [];
+let selectedCols = [];
+let corrMatrix = [];
+let currentMethod = 'pearson';
+let currentScheme = 'RdBu';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function showInfo(msg, type) {
+  const el = document.getElementById('fileInfo');
+  el.textContent = msg; el.className = `info show ${type}`;
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => parseExcel(e.target.result, file.name);
+  reader.readAsArrayBuffer(file);
+}
+
+function parseExcel(buffer, fname) {
+  try {
+    const wb = XLSX.read(buffer, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    if (rows.length < 2) { showInfo('데이터가 부족합니다.', 'err'); return; }
+
+    headers = rows[0].map(h => String(h).trim());
+    allRows = rows.slice(1);
+
+    showInfo(`${fname} · ${allRows.length}행 · ${headers.length}개 컬럼 로드됨`, 'ok');
+    renderHeaderCards();
+    document.getElementById('headerSection').style.display = 'block';
+  } catch(e) {
+    showInfo('파일 읽기 오류: ' + e.message, 'err');
+  }
+}
+
+function renderHeaderCards() {
+  const wrap = document.getElementById('headerCards');
+  wrap.innerHTML = '';
+  selectedCols = [];
+  updateSelectedCount();
+
+  headers.forEach((h, i) => {
+    const card = document.createElement('div');
+    card.className = 'hdr-card';
+    card.innerHTML = `<span class="col-idx">${i}:</span>${h}`;
+    card.dataset.idx = i;
+    card.dataset.header = h;
+    card.addEventListener('click', () => toggleCol(card, i, h));
+    wrap.appendChild(card);
+  });
+}
+
+function toggleCol(card, idx, header) {
+  const pos = selectedCols.findIndex(c => c.idx === idx);
+  if (pos === -1) {
+    selectedCols.push({ idx, header });
+    card.classList.add('selected');
+  } else {
+    selectedCols.splice(pos, 1);
+    card.classList.remove('selected');
+  }
+  updateSelectedCount();
+  document.getElementById('runBtn').disabled = selectedCols.length < 2;
+}
+
+function updateSelectedCount() {
+  document.getElementById('selectedCount').textContent = `${selectedCols.length}개 선택됨`;
+}
+
+// ── Method
+function setMethod(method) {
+  currentMethod = method;
+  document.getElementById('btnPearson').classList.toggle('active', method === 'pearson');
+  document.getElementById('btnSpearman').classList.toggle('active', method === 'spearman');
+  if (corrMatrix.length) runAnalysis();
+}
+
+// ── Correlation
+function rank(arr) {
+  const sorted = [...arr].map((v,i) => [v,i]).sort((a,b) => a[0]-b[0]);
+  const ranks = new Array(arr.length);
+  let i = 0;
+  while (i < sorted.length) {
+    let j = i;
+    while (j < sorted.length - 1 && sorted[j][0] === sorted[j+1][0]) j++;
+    const avg = (i + j) / 2 + 1;
+    for (let k = i; k <= j; k++) ranks[sorted[k][1]] = avg;
+    i = j + 1;
+  }
+  return ranks;
+}
+
+function pearson(a, b) {
+  const n = a.length;
+  const ma = a.reduce((s,v) => s+v, 0) / n;
+  const mb = b.reduce((s,v) => s+v, 0) / n;
+  let num = 0, da = 0, db = 0;
+  for (let i = 0; i < n; i++) {
+    const ea = a[i]-ma, eb = b[i]-mb;
+    num += ea*eb; da += ea*ea; db += eb*eb;
+  }
+  return da === 0 || db === 0 ? 0 : num / Math.sqrt(da*db);
+}
+
+function spearman(a, b) { return pearson(rank(a), rank(b)); }
+function correlate(a, b) { return currentMethod === 'spearman' ? spearman(a, b) : pearson(a, b); }
+
+// ── Run
+function runAnalysis() {
+  const colIndices = selectedCols.map(c => c.idx);
+
+  // 모든 선택된 컬럼에서 유효한 행만 추출 (joint NaN filtering)
+  const validRows = allRows.filter(row =>
+    colIndices.every(idx => {
+      const v = parseFloat(row[idx]);
+      return !isNaN(v);
+    })
+  );
+
+  if (validRows.length < 2) {
+    alert('유효한 데이터가 2행 미만입니다.'); return;
+  }
+
+  const colData = colIndices.map(idx =>
+    validRows.map(row => parseFloat(row[idx]))
+  );
+
+  const n = selectedCols.length;
+
+  corrMatrix = selectedCols.map((r, i) => selectedCols.map((c, j) => {
+    if (j > i) return null;
+    if (i === j) return null;
+    return correlate(colData[i], colData[j]);
+  }));
+
+  document.getElementById('resultTitle').textContent =
+    `Correlation Matrix — ${currentMethod === 'spearman' ? 'Spearman' : 'Pearson'} (${n} columns, ${validRows.length} rows)`;
+
+  renderHeatmap();
+  updateLegend();
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('dlSVG').style.display = 'inline-block';
+  document.getElementById('dlCSV').style.display = 'inline-block';
+  document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Color Schemes
+const SCHEMES = {
+  'RdBu':     { neg:[33,102,172],   mid:[245,245,245], pos:[178,24,43],   label:'RdBu' },
+  'Seismic':  { neg:[0,0,255],      mid:[255,255,255], pos:[255,0,0],     label:'Seismic' },
+  'Coolwarm': { neg:[59,76,192],    mid:[221,221,221], pos:[180,4,38],    label:'Coolwarm' },
+  'PuOr':     { neg:[84,39,136],    mid:[247,247,247], pos:[179,88,6],    label:'PuOr' },
+  'BrBG':     { neg:[1,102,94],     mid:[245,245,245], pos:[140,81,10],   label:'BrBG' },
+  'BlRd':     { neg:[3,110,184],    mid:[255,255,255], pos:[192,57,43],   label:'Blue–Red' },
+  'BlCr':     { neg:[3,110,184],    mid:[255,252,242], pos:[139,28,28],   label:'Blue–Crimson' },
+};
+
+function initSchemeButtons() {
+  const wrap = document.getElementById('schemeButtons');
+  Object.keys(SCHEMES).forEach((key, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'scheme-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = SCHEMES[key].label;
+    btn.style.borderLeft = `4px solid rgb(${SCHEMES[key].pos.join(',')})`;
+    btn.onclick = () => {
+      document.querySelectorAll('.scheme-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentScheme = key;
+      if (corrMatrix.length) { renderHeatmap(); updateLegend(); }
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function updateLegend() {
+  const s = SCHEMES[currentScheme];
+  document.getElementById('legendBar').style.background =
+    `linear-gradient(to right, rgb(${s.neg.join(',')}), rgb(${s.mid.join(',')}), rgb(${s.pos.join(',')}))`;
+}
+
+function lerpColor(a, b, t) { return a.map((v,i) => Math.round(v + (b[i]-v)*t)); }
+
+function corrColor(v) {
+  if (v === null) return '#f9f9f9';
+  const s = SCHEMES[currentScheme];
+  const t = Math.max(-1, Math.min(1, v));
+  const rgb = t < 0 ? lerpColor(s.mid, s.neg, -t) : lerpColor(s.mid, s.pos, t);
+  return `rgb(${rgb.join(',')})`;
+}
+
+function textColor(v) {
+  if (v === null) return 'transparent';
+  return Math.abs(v) > 0.45 ? '#ffffff' : '#1a1814';
+}
+
+// ── Render SVG
+function renderHeatmap() {
+  const cols = selectedCols.map(c => c.header);
+  const n = cols.length;
+  const cell = 68;
+  const labelW = 80;
+  const labelH = 72;
+  const pad = 16;
+  const W = labelW + n * cell + pad;
+  const H = labelH + n * cell + pad;
+
+  let svg = `<svg id="heatmapSVG" xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" style="font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif;">`;
+  svg += `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+  svg += `<text x="${W/2}" y="20" text-anchor="middle" font-size="13" font-weight="600" font-family="'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Arial,sans-serif" fill="#1a1814">Correlation Matrix</text>`;
+
+  cols.forEach((c, j) => {
+    const x = labelW + j * cell + cell / 2;
+    svg += `<text x="${x}" y="${labelH-8}" text-anchor="middle" font-size="11" fill="#6b6560" transform="rotate(-30,${x},${labelH-8})">${c}</text>`;
+  });
+
+  cols.forEach((r, i) => {
+    const y = labelH + i * cell;
+    svg += `<text x="${labelW-8}" y="${y+cell/2+4}" text-anchor="end" font-size="11" fill="#6b6560">${r}</text>`;
+    cols.forEach((c, j) => {
+      if (j > i) return;
+      const x = labelW + j * cell;
+      const val = corrMatrix[i][j];
+      svg += `<rect x="${x+1}" y="${y+1}" width="${cell-2}" height="${cell-2}" fill="${corrColor(val)}" rx="2"/>`;
+      if (val !== null) {
+        svg += `<text x="${x+cell/2}" y="${y+cell/2+4}" text-anchor="middle" font-size="11" font-weight="500" fill="${textColor(val)}">${val.toFixed(2)}</text>`;
+      }
+    });
+  });
+
+  svg += `</svg>`;
+  document.getElementById('heatmapContainer').innerHTML = svg;
+}
+
+// ── Downloads
+function downloadSVG() {
+  const svg = document.getElementById('heatmapSVG');
+  if (!svg) return;
+  const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'correlation_heatmap.svg'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadCSV() {
+  const cols = selectedCols.map(c => c.header);
+  let csv = ',' + cols.join(',') + '\n';
+  cols.forEach((r, i) => {
+    csv += r;
+    cols.forEach((c, j) => {
+      const v = corrMatrix[i][j];
+      csv += ',' + (v !== null ? v.toFixed(4) : '');
+    });
+    csv += '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'correlation_matrix.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+initSchemeButtons();
+updateLegend();
+</script>
+<footer class="workflow-footer"><div><a class="flow-button secondary" href="distribution.html">← 이전 · 분포도</a></div><div><a class="flow-button primary" href="index.html">메인으로 돌아가기 ↺</a></div></footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimization Analysis Suite</title>
+<link rel="stylesheet" href="assets/common.css">
+</head>
+<body class="home-page">
+<nav class="site-nav" aria-label="메인 내비게이션">
+  <div class="site-nav-inner">
+    <a class="site-brand" href="index.html" aria-current="page">
+      <span class="brand-mark">OA</span>
+      <span><strong>Optimization Analysis</strong><small>Integrated Data Workflow</small></span>
+    </a>
+    <a class="home-start-link" href="excel.html">분석 시작하기 →</a>
+  </div>
+</nav>
+
+<main class="home-shell">
+  <section class="home-hero">
+    <div class="home-kicker">OPTIMIZATION DATA ANALYSIS SUITE</div>
+    <h1>최적화 데이터를<br><span>하나의 흐름으로 분석합니다.</span></h1>
+    <p>Raw 데이터 변환부터 Hypervolume 수렴도, 분포도, 지표 간 상관관계까지 네 가지 분석 도구를 단계별로 사용할 수 있습니다.</p>
+    <div class="home-actions">
+      <a class="home-primary" href="excel.html">01 엑셀 변환부터 시작</a>
+      <a class="home-secondary" href="#analysis-tools">전체 도구 보기</a>
+    </div>
+  </section>
+
+  <section class="home-overview" aria-label="분석 흐름">
+    <span>RAW DATA</span><i>→</i><span>CONVERGENCE</span><i>→</i><span>DISTRIBUTION</span><i>→</i><span>CORRELATION</span>
+  </section>
+
+  <section id="analysis-tools" class="tool-grid">
+    <a class="tool-card" href="excel.html">
+      <div class="tool-card-top"><span class="tool-index">01</span><span class="tool-arrow">↗</span></div>
+      <div class="tool-icon">XL</div>
+      <h2>엑셀 변환</h2>
+      <p>Raw 데이터를 정리하여 이후 분석에 사용할 수 있는 Excel 파일로 변환합니다.</p>
+      <span class="tool-tag">Raw → Excel</span>
+    </a>
+    <a class="tool-card" href="convergence.html">
+      <div class="tool-card-top"><span class="tool-index">02</span><span class="tool-arrow">↗</span></div>
+      <div class="tool-icon">HV</div>
+      <h2>수렴도 확인</h2>
+      <p>Hypervolume의 세대별 변화를 계산해 최적화 결과의 수렴 또는 발산 여부를 확인합니다.</p>
+      <span class="tool-tag">Hypervolume</span>
+    </a>
+    <a class="tool-card" href="distribution.html">
+      <div class="tool-card-top"><span class="tool-index">03</span><span class="tool-arrow">↗</span></div>
+      <div class="tool-icon">SP</div>
+      <h2>분포도</h2>
+      <p>Excel 데이터의 선택 지표를 2D·3D 산점도로 표현해 데이터 분포를 살펴봅니다.</p>
+      <span class="tool-tag">Scatter Plot</span>
+    </a>
+    <a class="tool-card" href="correlation.html">
+      <div class="tool-card-top"><span class="tool-index">04</span><span class="tool-arrow">↗</span></div>
+      <div class="tool-icon">HM</div>
+      <h2>상관관계</h2>
+      <p>Pearson 또는 Spearman 방식으로 지표 간 상관관계를 계산하고 히트맵으로 확인합니다.</p>
+      <span class="tool-tag">Correlation Heatmap</span>
+    </a>
+  </section>
+</main>
+</body>
+</html>
